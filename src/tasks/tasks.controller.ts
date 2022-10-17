@@ -70,10 +70,9 @@ export class TasksController {
   updateTaskStatus(
     @Param('id') id: number,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
-    @GetUser() user: User,
   ): Promise<Task> {
     const { status } = updateTaskStatusDto;
-    return this.tasksService.updateTaskStatus(id, status, user);
+    return this.tasksService.updateTaskStatus(id, status);
   }
 
   @Put('/:id/asignee')
