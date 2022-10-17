@@ -79,7 +79,6 @@ export class TasksController {
   updateTaskAsignee(
     @Param('id') id: number,
     @Body() updateTaskAsigneeDto: UpdateTaskAsegneeDto,
-    @GetUser() user: User,
   ): Promise<Task> {
     const { userId } = updateTaskAsigneeDto;
     return this.tasksService.asigneeTaskToUser(id, userId);
