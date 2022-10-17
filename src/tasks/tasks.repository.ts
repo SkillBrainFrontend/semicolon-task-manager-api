@@ -11,29 +11,17 @@ export class TasksRepository extends Repository<Task> {
   private logger = new Logger('TasksRepository', true);
 
   async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
-    const { status, search } = filterDto;
-
-    const query = this.createQueryBuilder('task');
-    query.where({ user });
-
-    if (status) {
-      query.andWhere('task.status = :status', { status });
-    }
-
-    if (search) {
-      query.andWhere(
-        '(LOWER(task.title) LIKE LOWER(:search) OR LOWER(task.description) LIKE LOWER(:search))',
-        { search: `%${search}%` },
-      );
-    }
+    const tasks = await this.createQueryBuilder('task')
+      .leftJoinAndSelect('task.assignedTo', 'assignedTo')
+      .leftJoinAndSelect('task.createdBy', 'createdBy')
+      .getMany();
 
     try {
-      const tasks = await query.getMany();
       return tasks;
     } catch (error) {
       this.logger.error(
         `Failed to get tasks for user "${
-          user.username
+          user.email
         }". Filters: ${JSON.stringify(filterDto)}`,
         error.stack,
       );
@@ -42,13 +30,15 @@ export class TasksRepository extends Repository<Task> {
   }
 
   async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
-    const { title, description } = createTaskDto;
+    const { title, description, dueDate } = createTaskDto;
 
     const task = this.create({
       title,
       description,
-      status: TaskStatus.OPEN,
-      user,
+      status: TaskStatus.UNNASIGNED,
+      dueDate: new Date(dueDate),
+      createdAt: new Date(),
+      createdBy: user,
     });
 
     await this.save(task);

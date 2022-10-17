@@ -1,12 +1,11 @@
-import { Exclude } from 'class-transformer';
 import { User } from '../auth/user.entity';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { TaskStatus } from './task-status.enum';
 
 @Entity()
 export class Task {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   title: string;
@@ -17,7 +16,15 @@ export class Task {
   @Column()
   status: TaskStatus;
 
+  @Column()
+  createdAt: Date;
+
+  @Column()
+  dueDate: Date;
+
   @ManyToOne((_type) => User, (user) => user.tasks, { eager: false })
-  @Exclude({ toPlainOnly: true })
-  user: User;
+  assignedTo: User;
+
+  @ManyToOne((_type) => User, (user) => user.createdTasks, { eager: false })
+  createdBy: User;
 }

@@ -7,11 +7,20 @@ export class User {
   id: string;
 
   @Column({ unique: true })
-  username: string;
+  email: string;
 
   @Column()
+  fullName: string;
+
+  @Column({ select: false })
   password: string;
 
-  @OneToMany((_type) => Task, (task) => task.user, { eager: true })
+  @Column({ nullable: true })
+  profilePicture: string;
+
+  @OneToMany((_type) => Task, (task) => task.assignedTo, { eager: true })
   tasks: Task[];
+
+  @OneToMany((_type) => Task, (task) => task.assignedTo, { eager: false })
+  createdTasks: Task[];
 }
