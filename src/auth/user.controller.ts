@@ -4,13 +4,11 @@ import {
   Param,
   Post,
   Query,
-  UseInterceptors,
   UseGuards,
-  UploadedFile,
   Request,
   Res,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+
 import { diskStorage } from 'multer';
 import path = require('path');
 import { v4 as uuidv4 } from 'uuid';
@@ -20,8 +18,7 @@ import { UserService } from './user.service';
 import { User } from './user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { join } from 'path';
-
-import * as fs from 'fs';
+import { ImageUploadService } from './image-upload/image-upload.service';
 
 export const storage = {
   storage: diskStorage({
@@ -38,7 +35,10 @@ export const storage = {
 
 @Controller('user')
 export class UserControler {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private readonly imageUploadService: ImageUploadService,
+  ) {}
 
   @UseGuards(AuthGuard())
   @Get()
@@ -51,28 +51,16 @@ export class UserControler {
   getUserById(@Query('id') id: string): Promise<User> {
     return this.userService.getUserById(id);
   }
-
   @UseGuards(AuthGuard())
   @Post('/upload')
-  @UseInterceptors(FileInterceptor('file', storage))
-  async uploadFile(@UploadedFile() file, @Request() req): Promise<User> {
-    const user: User = req.user;
+  async uploadFile(@Request() req, @Res() response): Promise<User> {
     try {
-      const filePath = path.join(
-        './uploads/profileimages',
-        user.profilePicture,
-      );
-      fs.unlink(filePath, (err) => {
-        //delete file from directory
-        if (err) console.log(err);
-        else {
-          console.log('file deleted');
-        }
-      });
-    } catch (e) {
-      return e.message;
+      await this.imageUploadService.fileupload(req, response);
+    } catch (error) {
+      return response
+        .status(500)
+        .json(`Failed to upload image file: ${error.message}`);
     }
-    return await this.userService.uploadProfilePicture(user, file.filename);
   }
 
   @Get('profile-image/:imagename')
@@ -81,16 +69,18 @@ export class UserControler {
     @Res() res,
   ): Observable<User> {
     try {
-      const resolvedPath = path.resolve('uploads/profileimages/' + imagename);
       return of(
-        res.sendFile(join(process.cwd(), resolvedPath), (err) => {
-          if (err) {
-            res.status(err.status).end();
-          }
-        }),
+        res.sendFile(
+          join(process.cwd(), 'uploads/profileimages/' + imagename),
+          (err) => {
+            if (err) {
+              res.status(err.status).end();
+            }
+          },
+        ),
       );
     } catch (e) {
-      return e.errorMessage;
+      res.status(e.status).end();
     }
   }
 }

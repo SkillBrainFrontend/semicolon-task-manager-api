@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from './user.service';
+import { ImageUploadService } from './image-upload/image-upload.service';
 import { AuthController } from './auth.controller';
 import { UserControler } from './user.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -26,7 +27,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
     TypeOrmModule.forFeature([UsersRepository]),
   ],
-  providers: [AuthService, JwtStrategy, AuthService, UserService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    AuthService,
+    UserService,
+    ImageUploadService,
+  ],
   controllers: [AuthController, UserControler],
   exports: [JwtStrategy, PassportModule],
 })
