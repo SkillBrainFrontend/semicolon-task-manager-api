@@ -47,6 +47,12 @@ export class UserControler {
   }
 
   @UseGuards(AuthGuard())
+  @Get('/logged-user')
+  getLoggedUser(@Request() req): Promise<User> {
+    return this.userService.getLoggedUser(req.user);
+  }
+
+  @UseGuards(AuthGuard())
   @Get('/details')
   getUserById(@Query('id') id: string): Promise<User> {
     return this.userService.getUserById(id);

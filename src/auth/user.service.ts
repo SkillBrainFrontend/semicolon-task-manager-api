@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { UsersRepository } from './users.repository';
@@ -13,6 +17,14 @@ export class UserService {
 
   async getUsers(): Promise<User[]> {
     return this.usersRepository.getUsers();
+  }
+
+  async getLoggedUser(user: User): Promise<User> {
+    const loggedUser = await this.usersRepository.findOne(user.id);
+    if (!loggedUser) {
+      throw new UnauthorizedException(`User is not logged in`);
+    }
+    return loggedUser;
   }
 
   async getUserById(id: string): Promise<User> {
