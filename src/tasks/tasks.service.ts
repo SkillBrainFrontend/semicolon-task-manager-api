@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  HttpException,
+} from '@nestjs/common';
 import { TaskStatus } from './task-status.enum';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
@@ -7,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Task } from './task.entity';
 import { User } from '../auth/user.entity';
 import { UsersRepository } from 'src/auth/users.repository';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -51,21 +57,48 @@ export class TasksService {
     return this.tasksRepository.createTask(createTaskDto, user);
   }
 
-  async deleteTask(id: number, user: User): Promise<void> {
-    const result = await this.tasksRepository.delete({ id, assignedTo: user });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Task with ID "${id}" not found`);
+  async deleteTask(id: number, user: User): Promise<any> {
+    const task = await this.tasksRepository.findOne({
+      where: { id },
+      relations: ['createdBy', 'assignedTo'],
+    });
+    if (!task) {
+      throw new HttpException(
+        `Task with ID "${id}" not found`,
+        HttpStatus.NOT_FOUND,
+      );
     }
+    const rightsToDelete =
+      task?.createdBy?.id === user.id || task?.assignedTo?.id === user.id;
+
+    if (rightsToDelete) {
+      return await this.tasksRepository.delete({
+        id,
+      });
+    }
+    throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
   }
 
   async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
     const task = await this.getPersonalTaskById(id);
 
     task.status = status;
+    if (status === 'UNNASIGNED') {
+      task.assignedTo = null;
+    }
     await this.tasksRepository.save(task);
 
     return task;
+  }
+
+  async updateTask(id: number, taskDetails: UpdateTaskDto): Promise<Task> {
+    const task = await this.getPersonalTaskById(id);
+
+    const updatedTask = {
+      ...task,
+      ...taskDetails,
+    };
+    return await this.tasksRepository.save(updatedTask);
   }
 
   async asigneeTaskToUser(taskId: number, userId: string): Promise<Task> {
@@ -83,8 +116,6 @@ export class TasksService {
     } catch (e) {
       throw new NotFoundException(e.message);
     }
-
-    // task.status = this.userRepository.findOne({ where: {} });
     await this.tasksRepository.save(task);
 
     return task;

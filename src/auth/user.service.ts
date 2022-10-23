@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { UsersRepository } from './users.repository';
 import { User } from './user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -25,6 +26,19 @@ export class UserService {
       throw new UnauthorizedException(`User is not logged in`);
     }
     return loggedUser;
+  }
+
+  async updateUser(user: User, userDto: UpdateUserDto): Promise<User> {
+    const loggedUser = await this.usersRepository.findOne(user.id);
+    if (!loggedUser) {
+      throw new UnauthorizedException(`User is not logged in`);
+    }
+    const updatedUser = {
+      ...loggedUser,
+      ...userDto,
+    };
+
+    return await this.usersRepository.save(updatedUser);
   }
 
   async getUserById(id: string): Promise<User> {

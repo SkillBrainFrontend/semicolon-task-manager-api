@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   Put,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from '../auth/get-user.decorator';
@@ -22,6 +24,7 @@ import {
 import { Task } from './task.entity';
 import { TasksService } from './tasks.service';
 import { Logger } from '@nestjs/common';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Controller('tasks')
 @UseGuards(AuthGuard())
@@ -73,6 +76,15 @@ export class TasksController {
   ): Promise<Task> {
     const { status } = updateTaskStatusDto;
     return this.tasksService.updateTaskStatus(id, status);
+  }
+
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @Patch(':id')
+  updateTask(
+    @Param('id') id: number,
+    @Body() updateTask: UpdateTaskDto,
+  ): Promise<Task> {
+    return this.tasksService.updateTask(id, updateTask);
   }
 
   @Put('/:id/asignee')

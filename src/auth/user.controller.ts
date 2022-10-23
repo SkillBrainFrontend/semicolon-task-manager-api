@@ -7,6 +7,10 @@ import {
   UseGuards,
   Request,
   Res,
+  UsePipes,
+  ValidationPipe,
+  Patch,
+  Body,
 } from '@nestjs/common';
 
 import { diskStorage } from 'multer';
@@ -19,6 +23,7 @@ import { User } from './user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { join } from 'path';
 import { ImageUploadService } from './image-upload/image-upload.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 export const storage = {
   storage: diskStorage({
@@ -57,6 +62,7 @@ export class UserControler {
   getUserById(@Query('id') id: string): Promise<User> {
     return this.userService.getUserById(id);
   }
+
   @UseGuards(AuthGuard())
   @Post('/upload')
   async uploadFile(@Request() req, @Res() response): Promise<User> {
@@ -67,6 +73,15 @@ export class UserControler {
         .status(500)
         .json(`Failed to upload image file: ${error.message}`);
     }
+  }
+
+  @UseGuards(AuthGuard())
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @Patch('/update')
+  updateUser(@Request() req, @Body() updateUser: UpdateUserDto): Promise<User> {
+    const loggedUser = req.user;
+    console.log({ loggedUser, updateUser });
+    return this.userService.updateUser(loggedUser, updateUser);
   }
 
   @Get('profile-image/:imagename')
